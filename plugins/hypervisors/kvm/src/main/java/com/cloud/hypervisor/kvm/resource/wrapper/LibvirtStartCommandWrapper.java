@@ -19,9 +19,13 @@
 
 package com.cloud.hypervisor.kvm.resource.wrapper;
 
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.List;
 
+import com.cloud.hypervisor.kvm.resource.LibvirtXMLTransformer;
+import groovy.util.ResourceException;
+import groovy.util.ScriptException;
 import org.apache.log4j.Logger;
 import org.libvirt.Connect;
 import org.libvirt.DomainInfo.DomainState;
@@ -81,7 +85,9 @@ public final class LibvirtStartCommandWrapper extends CommandWrapper<StartComman
             libvirtComputingResource.createVifs(vmSpec, vm);
 
             s_logger.debug("starting " + vmName + ": " + vm.toString());
-            libvirtComputingResource.startVM(conn, vmName, vm.toString());
+            LibvirtXMLTransformer t = libvirtComputingResource.getTransformer();
+            String vmXmlSpecification = t.transform(vm.toString());
+            libvirtComputingResource.startVM(conn, vmName, vmXmlSpecification);
 
             for (final NicTO nic : nics) {
                 if (nic.isSecurityGroupEnabled() || nic.getIsolationUri() != null && nic.getIsolationUri().getScheme().equalsIgnoreCase(IsolationType.Ec2.toString())) {
@@ -148,6 +154,24 @@ public final class LibvirtStartCommandWrapper extends CommandWrapper<StartComman
             return new StartAnswer(command, e.getMessage());
         } catch (final URISyntaxException e) {
             s_logger.warn("URISyntaxException ", e);
+            if (conn != null) {
+                libvirtComputingResource.handleVmStartFailure(conn, vmName, vm);
+            }
+            return new StartAnswer(command, e.getMessage());
+        } catch (IOException e) {
+            s_logger.warn("IOException ", e);
+            if (conn != null) {
+                libvirtComputingResource.handleVmStartFailure(conn, vmName, vm);
+            }
+            return new StartAnswer(command, e.getMessage());
+        } catch (ResourceException e) {
+            s_logger.warn("ResourceException ", e);
+            if (conn != null) {
+                libvirtComputingResource.handleVmStartFailure(conn, vmName, vm);
+            }
+            return new StartAnswer(command, e.getMessage());
+        } catch (ScriptException e) {
+            s_logger.warn("ScriptException ", e);
             if (conn != null) {
                 libvirtComputingResource.handleVmStartFailure(conn, vmName, vm);
             }

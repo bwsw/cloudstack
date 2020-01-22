@@ -280,6 +280,9 @@ public class LibvirtComputingResource extends ServerResourceBase implements Serv
     protected String _rngPath = "/dev/random";
     protected int _rngRatePeriod = 1000;
     protected int _rngRateBytes = 2048;
+    protected String _agentHooksBasedir = "/etc/cloudstack/agent/hooks";
+    protected String _agentHooksLibvirtXmlHookScript = "libvirt-vm-xml-transformer.groovy";
+    protected String _agentHooksLibvirtXmlHookMethod = "transform";
     protected File _qemuSocketsPath;
     private final String _qemuGuestAgentSocketName = "org.qemu.guest_agent.0";
     protected WatchDogAction _watchDogAction = WatchDogAction.NONE;
@@ -380,6 +383,10 @@ public class LibvirtComputingResource extends ServerResourceBase implements Serv
             return cleanupNetworkElementCommand((IpAssocCommand)cmd);
         }
         return new ExecutionResult(true, null);
+    }
+
+    public LibvirtXMLTransformer getTransformer() throws IOException {
+        return new LibvirtXMLTransformer(_agentHooksBasedir, _agentHooksLibvirtXmlHookScript, _agentHooksLibvirtXmlHookMethod);
     }
 
     public LibvirtUtilitiesHelper getLibvirtUtilitiesHelper() {
@@ -1060,6 +1067,24 @@ public class LibvirtComputingResource extends ServerResourceBase implements Serv
 
         value = (String) params.get("vm.migrate.pauseafter");
         _migratePauseAfter = NumbersUtil.parseInt(value, -1);
+
+        value = (String) params.get("agent.hooks.basedir");
+        if (null != value) {
+            _agentHooksBasedir = value;
+        }
+        s_logger.debug("agent.hooks.basedir is " + _agentHooksBasedir);
+
+        value = (String) params.get("agent.hooks.libvirt_vm_xml_transformer.script");
+        if (null != value) {
+            _agentHooksLibvirtXmlHookScript = value;
+        }
+        s_logger.debug("agent.hooks.libvirt_vm_xml_transformer.script is " + _agentHooksLibvirtXmlHookScript);
+
+        value = (String) params.get("agent.hooks.libvirt_vm_xml_transformer.method");
+        if (null != value) {
+            _agentHooksLibvirtXmlHookMethod = value;
+        }
+        s_logger.debug("agent.hooks.libvirt_vm_xml_transformer.method is " + _agentHooksLibvirtXmlHookMethod);
 
         value = (String)params.get("vm.migrate.speed");
         _migrateSpeed = NumbersUtil.parseInt(value, -1);
